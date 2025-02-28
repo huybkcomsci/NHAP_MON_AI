@@ -1,83 +1,35 @@
 import pygame
-import tkinter as tk
-from tkinter import filedialog
 from config import *
-from solver import *
 
+# Khởi tạo màn hình
+pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-def load_sudoku_from_file():
-    root = tk.Tk()
-    root.withdraw()
-    file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
-    if file_path:
-        board = [[0 for _ in range(9)] for _ in range(9)]
-        with open(file_path, 'r') as file:
-            for i, line in enumerate(file.readlines()):
-                numbers = list(map(int, line.strip().split()))
-                for j, num in enumerate(numbers):
-                    board[i][j] = num
-        return board
-    return None
+pygame.display.set_caption("Giai Sudoku")
 
-def main():
-    board = [[0 for _ in range(9)] for _ in range(9)]
-    solution = [[0 for _ in range(9)] for _ in range(9)]
-    running = True
-    selected = None
-    
-    while running:
-        screen.fill(WHITE)
-        highlight_area(board, selected)
-        draw_numbers(board, solution)
-        draw_grid()
-        
-        pygame.draw.rect(screen, GRAY, solve_button)
-        pygame.draw.rect(screen, GRAY, import_button)
-        pygame.draw.rect(screen, GRAY, a_star_button)
-        pygame.draw.rect(screen, GRAY, reset_button)
-        
-        button_text = button_font.render("DFS", True, BLACK)
-        screen.blit(button_text, (70, 560))
-        
-        import_text = button_font.render("Import", True, BLACK)
-        screen.blit(import_text, (270, 560))
-        
-        a_star_text = button_font.render("A*", True, BLACK)
-        screen.blit(a_star_text, (190, 560))
-        
-        reset_text = button_font.render("Reset", True, BLACK)
-        screen.blit(reset_text, (425, 560))
-        
-        pygame.display.update()
+def highlight_area(board, selected):
+    if selected:
+        row, col = selected
+        box_x, box_y = col // 3, row // 3
+        for i in range(9):
+            pygame.draw.rect(screen, LIGHT_BLUE, (i * GRID_SIZE, row * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+            pygame.draw.rect(screen, LIGHT_BLUE, (col * GRID_SIZE, i * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+        for i in range(box_y * 3, box_y * 3 + 3):
+            for j in range(box_x * 3, box_x * 3 + 3):
+                pygame.draw.rect(screen, LIGHT_BLUE, (j * GRID_SIZE, i * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+        pygame.draw.rect(screen, DARK_BLUE, (col * GRID_SIZE, row * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+def draw_grid():
+    for i in range(10):
+        thickness = 4 if i % 3 == 0 else 1
+        pygame.draw.line(screen, BLACK, (i * GRID_SIZE, 0), (i * GRID_SIZE, WIDTH), thickness)
+        pygame.draw.line(screen, BLACK, (0, i * GRID_SIZE), (WIDTH, i * GRID_SIZE), thickness)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = pygame.mouse.get_pos()
-                if solve_button.collidepoint(x, y):
-                    dfs_solve(board, solution)
-                elif import_button.collidepoint(x, y):
-                    new_board = load_sudoku_from_file()
-                    if new_board:
-                        board = new_board
-                        solution = [[0 for _ in range(9)] for _ in range(9)]
-                elif a_star_button.collidepoint(x, y):
-                    a_star_solve(board, solution)
-                elif reset_button.collidepoint(x, y):
-                    board = [[0 for _ in range(9)] for _ in range(9)]
-                    solution = [[0 for _ in range(9)] for _ in range(9)]
-                else:
-                    col, row = x // GRID_SIZE, y // GRID_SIZE
-                    selected = (row, col)
-            if event.type == pygame.KEYDOWN:
-                if selected:
-                    if event.unicode.isdigit() and event.unicode != '0':
-                        board[selected[0]][selected[1]] = int(event.unicode)
-                    elif event.key == pygame.K_BACKSPACE:
-                        board[selected[0]][selected[1]] = 0
-                    selected = None
-    pygame.quit()
-
-if __name__ == "__main__":
-    main()
+def draw_numbers(board, solution):
+    for i in range(9):
+        for j in range(9):
+            if solution[i][j] != 0:
+                color = GREEN
+                text = font.render(str(solution[i][j]), True, color)
+            else:
+                color = BLACK
+                text = font.render(" " if board[i][j] == 0 else str(board[i][j]), True, color)
+            screen.blit(text, (j * GRID_SIZE + 20, i * GRID_SIZE + 10))
